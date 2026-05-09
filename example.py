@@ -1,3 +1,4 @@
+# An test to see the db_manager actually works
 from db_manager import db_manager, column, query
 
 if __name__ == "__main__":
