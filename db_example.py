@@ -1,10 +1,10 @@
-# An test to see the db_manager actually works
-from db_manager import db_manager, column, query
+# A test to see the db_manager.py actually works
+from Database_API import db_manager, column, query
 
 if __name__ == "__main__":
     # Initialize DB (unencrypted at this moment)
     user_data = db_manager(
-        "./data",
+        "./Database_API/tempData",      # Will change this into a different place, likely allow the user to select where
         "logins",
         "users",
         (
