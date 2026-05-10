@@ -1,10 +1,10 @@
 # A test to see the db_manager.py actually works
-from Backend.Database_API import column, query, db_manager
+from Backend.Database_API import *
 
 if __name__ == "__main__":
     # Initialize DB (unencrypted at this moment)
     user_data = db_manager(
-        "./Backend/Database_API/tempData",
+        "./tempData",
         "logins",
         "users",
         (
@@ -18,7 +18,7 @@ if __name__ == "__main__":
     user_data.create_db()
 
     # INSERT (via QueryBuilder)
-    user_data.run(query("users").insert(name="some guy", age=17))
+    user_data.run(query("users").insert(name="some guy", age=30))
     user_data.run(query("users").insert(name="Alice", age=22))
     user_data.run(query("users").insert(name="Bob", age=30))
 
