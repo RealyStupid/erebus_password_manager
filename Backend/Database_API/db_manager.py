@@ -1,53 +1,38 @@
 import sqlcipher3
 from typing import Iterable
 
+#  COLUMN BUILDER
 class _ColumnBuilder:
     def __init__(self, name: str):
         self.name = name
         self.type = None
         self.constraints = []
         self._type_set = False
-        self._finalized = False
 
     def __repr__(self):
-        return f"<RowBuilder {self.to_sql()}>"
+        return f"<ColumnBuilder {self.to_sql()}>"
 
     # datatypes
     def int(self):
-        if self._type_set:
-            raise ValueError("[Invalid Chaining] Type already set for this column")
-        self._type_set = True
-        self.type = "INTEGER"
+        self._set_type("INTEGER")
         return self
 
     def text(self):
-        if self._type_set:
-            raise ValueError("[Invalid Chaining] Type already set for this column")
-        self._type_set = True
-        self.type = "TEXT"
+        self._set_type("TEXT")
         return self
 
     def real(self):
-        if self._type_set:
-            raise ValueError("[Invalid Chaining] Type already set for this column")
-        self._type_set = True
-        self.type = "REAL"
+        self._set_type("REAL")
         return self
-    
+
     def blob(self):
-        if self._type_set:
-            raise ValueError("[Invalid Chaining] Type already set for this column")
-        self._type_set = True
-        self.type = "BLOB"
+        self._set_type("BLOB")
         return self
-    
+
     def numeric(self):
-        if self._type_set:
-            raise ValueError("[Invalid Chaining] Type already set for this column")
-        self._type_set = True
-        self.type = "NUMARIC"
+        self._set_type("NUMERIC")  # FIXED TYPO
         return self
-    
+
     # aliases
     def boolean(self): return self.numeric()
     def float(self): return self.real()
@@ -55,27 +40,25 @@ class _ColumnBuilder:
     def date(self): return self.text()
     def datetime(self): return self.text()
 
+    def _set_type(self, t):
+        if self._type_set:
+            raise ValueError("Type already set for this column")
+        self.type = t
+        self._type_set = True
+
     # constraints
     def primary_key(self):
-        if not self._type_set:
-            raise ValueError("Set a type before adding constraints")
-        if "PRIMARY KEY" in self.constraints:
-            raise ValueError("PRIMARY KEY already applied")
-        self.constraints.append("PRIMARY KEY")
+        self._require_type()
+        self._add_constraint("PRIMARY KEY")
         return self
 
     def not_null(self):
-        if not self._type_set:
-            raise ValueError("Set a type before NOT NULL")
-        if "NOT NULL" in self.constraints:
-            raise ValueError("NOT NULL already applied")
-        self.constraints.append("NOT NULL")
+        self._require_type()
+        self._add_constraint("NOT NULL")
         return self
 
     def unique(self):
-        if "UNIQUE" in self.constraints:
-            raise ValueError("UNIQUE already applied")
-        self.constraints.append("UNIQUE")
+        self._add_constraint("UNIQUE")
         return self
 
     def default(self, value):
@@ -99,7 +82,7 @@ class _ColumnBuilder:
             raise ValueError("AUTOINCREMENT requires PRIMARY KEY")
         self.constraints.append("AUTOINCREMENT")
         return self
-    
+
     def foreign_key(self, reference: str):
         self.constraints.append(f"REFERENCES {reference}")
         return self
@@ -111,23 +94,33 @@ class _ColumnBuilder:
         self.constraints.append(f"ON CONFLICT {rule}")
         return self
 
+    def _require_type(self):
+        if not self._type_set:
+            raise ValueError("Set a type before adding constraints")
+
+    def _add_constraint(self, c):
+        if c in self.constraints:
+            raise ValueError(f"{c} already applied")
+        self.constraints.append(c)
+
     def to_sql(self):
         if not self._type_set:
             raise ValueError("Column type not set")
         return " ".join([self.name, self.type] + self.constraints)
 
+#  QUERY BUILDER
 class _QueryBuilder:
     def __init__(self, table: str):
         self.table = table
 
-        self._mode = None  # SELECT / INSERT / UPDATE / DELETE
+        self._mode = None
 
         # SELECT state
         self._select_cols = []
-        self._joins = []
-        self._where = []
+        self._joins = []          # (type, table, left_col, right_col)
+        self._where = []          # (condition_sql, params)
         self._group_by = []
-        self._having = []
+        self._having = []         # (condition_sql, params)
         self._order_by = None
         self._limit = None
         self._offset = None
@@ -139,138 +132,192 @@ class _QueryBuilder:
         # UPDATE state
         self._update_pairs = {}
 
+        # PARAMETER STORAGE
+        self._params = []
+
+    # -----------------------------
     # SELECT
+    # -----------------------------
     def select(self, *cols):
         self._mode = "SELECT"
         self._select_cols.extend(cols)
         return self
 
-    def join(self, table, on):
-        self._joins.append(f"JOIN {table} ON {on}")
+    def join(self, table: str, left_col: str, right_col: str):
+        self._joins.append(("JOIN", table, left_col, right_col))
         return self
 
-    def left_join(self, table, on):
-        self._joins.append(f"LEFT JOIN {table} ON {on}")
+    def left_join(self, table: str, left_col: str, right_col: str):
+        self._joins.append(("LEFT JOIN", table, left_col, right_col))
         return self
 
-    def where(self, condition):
-        self._where.append(condition)
+    def where(self, condition: str, *params):
+        if "?" not in condition:
+            raise ValueError("Strict mode: WHERE requires placeholders (e.g., 'age > ?').")
+        self._where.append((condition, params))
         return self
 
     def group_by(self, *cols):
         self._group_by.extend(cols)
         return self
 
-    def having(self, condition):
-        self._having.append(condition)
+    def having(self, condition: str, *params):
+        if "?" not in condition:
+            raise ValueError("Strict mode: HAVING requires placeholders.")
+        self._having.append((condition, params))
         return self
 
-    def order_by(self, col, direction="ASC"):
+    def order_by(self, col: str, direction="ASC"):
         direction = direction.upper()
+        if direction not in ("ASC", "DESC"):
+            raise ValueError("order_by direction must be ASC or DESC")
         self._order_by = f"{col} {direction}"
         return self
 
-    def limit(self, n):
+    def limit(self, n: int):
         self._limit = n
         return self
 
-    def offset(self, n):
+    def offset(self, n: int):
         self._offset = n
         return self
 
+    # -----------------------------
     # INSERT
+    # -----------------------------
     def insert(self, **kwargs):
         self._mode = "INSERT"
         for col, val in kwargs.items():
             self._insert_cols.append(col)
-            self._insert_vals.append(val)
+            self._insert_vals.append("?")
+            self._params.append(val)
         return self
 
+    # -----------------------------
     # UPDATE
+    # -----------------------------
     def update(self, **kwargs):
         self._mode = "UPDATE"
         for col, val in kwargs.items():
-            self._update_pairs[col] = val
+            self._update_pairs[col] = "?"
+            self._params.append(val)
         return self
 
+    # -----------------------------
     # DELETE
+    # -----------------------------
     def delete(self):
         self._mode = "DELETE"
         return self
 
+    # -----------------------------
+    # SQL BUILDERS
+    # -----------------------------
     def to_sql(self):
         if self._mode == "SELECT":
-            return self._build_select()
+            return self._build_select(), self._params
         if self._mode == "INSERT":
-            return self._build_insert()
+            return self._build_insert(), self._params
         if self._mode == "UPDATE":
-            return self._build_update()
+            return self._build_update(), self._params
         if self._mode == "DELETE":
-            return self._build_delete()
+            return self._build_delete(), self._params
         raise ValueError("No query mode selected")
 
     def _build_select(self):
-        cols = ", ".join(self._select_cols) if self._select_cols else "*"
-        sql = f"SELECT {cols} FROM {self.table}"
+        sql = f"SELECT {', '.join(self._select_cols) if self._select_cols else '*'} FROM {self.table}"
 
-        if self._joins:
-            sql += " " + " ".join(self._joins)
+        # JOINS
+        for join_type, table, left, right in self._joins:
+            sql += f" {join_type} {table} ON {left} = {right}"
+
+        # WHERE
         if self._where:
-            sql += " WHERE " + " AND ".join(self._where)
+            parts = []
+            for cond, params in self._where:
+                parts.append(cond)
+                self._params.extend(params)
+            sql += " WHERE " + " AND ".join(parts)
+
+        # GROUP BY
         if self._group_by:
             sql += " GROUP BY " + ", ".join(self._group_by)
+
+        # HAVING
         if self._having:
-            sql += " HAVING " + " AND ".join(self._having)
+            parts = []
+            for cond, params in self._having:
+                parts.append(cond)
+                self._params.extend(params)
+            sql += " HAVING " + " AND ".join(parts)
+
+        # ORDER BY
         if self._order_by:
             sql += f" ORDER BY {self._order_by}"
+
+        # LIMIT / OFFSET
         if self._limit is not None:
-            sql += f" LIMIT {self._limit}"
+            sql += " LIMIT ?"
+            self._params.append(self._limit)
+
         if self._offset is not None:
-            sql += f" OFFSET {self._offset}"
+            sql += " OFFSET ?"
+            self._params.append(self._offset)
 
         return sql + ";"
 
     def _build_insert(self):
         cols = ", ".join(self._insert_cols)
-        placeholders = ", ".join([repr(v) for v in self._insert_vals])
+        placeholders = ", ".join(self._insert_vals)
         return f"INSERT INTO {self.table} ({cols}) VALUES ({placeholders});"
 
     def _build_update(self):
-        pairs = ", ".join([f"{col} = {repr(val)}" for col, val in self._update_pairs.items()])
-        sql = f"UPDATE {self.table} SET {pairs}"
+        assignments = ", ".join([f"{col} = ?" for col in self._update_pairs])
+        sql = f"UPDATE {self.table} SET {assignments}"
+
         if self._where:
-            sql += " WHERE " + " AND ".join(self._where)
+            parts = []
+            for cond, params in self._where:
+                parts.append(cond)
+                self._params.extend(params)
+            sql += " WHERE " + " AND ".join(parts)
+
         return sql + ";"
 
     def _build_delete(self):
         sql = f"DELETE FROM {self.table}"
+
         if self._where:
-            sql += " WHERE " + " AND ".join(self._where)
+            parts = []
+            for cond, params in self._where:
+                parts.append(cond)
+                self._params.extend(params)
+            sql += " WHERE " + " AND ".join(parts)
+
         return sql + ";"
 
+
+#  PUBLIC FACTORY FUNCTIONS
 def column(name: str) -> _ColumnBuilder:
-    """Set columns for your database."""
     return _ColumnBuilder(name)
 
 def query(table: str) -> _QueryBuilder:
-    """Create a query for your Database."""
     return _QueryBuilder(table)
+
+
+# ============================================================
+#  DATABASE MANAGER (UPDATED FOR PARAMETERIZED EXECUTION)
+# ============================================================
 
 class db_manager:
     def __init__(self, directory: str, db_name: str, table_name: str, schema: Iterable):
-        """
-        Creates a database object linked to the desired .db file.
-        `schema` is an iterable of _ColumnBuilder instances.
-        """
         self.table_name = table_name
         self.directory = directory
         self.db_name = db_name
 
-        # Build schema SQL
         self.schema = ", ".join(col.to_sql() for col in schema)
 
-        # Encryption
-        self._encryption_key = None  # Set by .encrypt()
+        self._encryption_key = None
 
         print("Database Initialized with:")
         print(f"Name: {db_name}.db")
@@ -278,12 +325,8 @@ class db_manager:
         print(f"Table Name: {table_name}")
         print(f"Schema: {self.schema}")
 
-    # INTERNAL CONNECTION HANDLER (SQLCipher)
+    # INTERNAL CONNECTION HANDLER
     def _connect(self):
-        """
-        Always uses SQLCipher. If encryption key is set, apply it.
-        """
-        # ensure directory exists
         _os = __import__("os")
         _os.makedirs(self.directory, exist_ok=True)
 
@@ -291,38 +334,26 @@ class db_manager:
         conn = sqlcipher3.connect(path)
 
         if self._encryption_key is not None:
-            # Apply key FIRST
             conn.execute(f"PRAGMA key = '{self._encryption_key}';")
 
-            # Force SQLCipher 4.x format parameters for new DBs and ensure strong KDF/HMAC
-            # These must be set immediately after the key and before creating any schema.
             try:
                 conn.execute("PRAGMA cipher_page_size = 4096;")
                 conn.execute("PRAGMA kdf_iter = 256000;")
                 conn.execute("PRAGMA cipher_hmac_algorithm = HMAC_SHA512;")
                 conn.execute("PRAGMA cipher_kdf_algorithm = PBKDF2_HMAC_SHA512;")
-                # Set compatibility to 4 to ensure SQLCipher4 format is used
                 conn.execute("PRAGMA cipher_compatibility = 4;")
             except Exception:
-                # Some sqlcipher3 builds may not expose all PRAGMAs; ignore and continue,
-                # but surface a warning via an exception later if the DB is unreadable.
                 pass
 
-            # If the file already existed and used an older format, attempt migration.
-            # This will succeed only if the key is correct and the runtime supports migration.
             try:
                 conn.execute("PRAGMA cipher_migrate;")
             except Exception:
-                # If migration fails, we don't automatically overwrite; caller should handle.
                 pass
 
         return conn
 
     # DATABASE CREATION
     def create_db(self):
-        """
-        Create the main table defined in __init__.
-        """
         conn = self._connect()
         cur = conn.cursor()
         cur.execute(f"CREATE TABLE IF NOT EXISTS {self.table_name} ({self.schema})")
@@ -330,9 +361,6 @@ class db_manager:
         conn.close()
 
     def create_table(self, table_name: str, schema: Iterable):
-        """
-        Create an additional table with the given schema.
-        """
         schema_sql = ", ".join(col.to_sql() for col in schema)
         conn = self._connect()
         cur = conn.cursor()
@@ -340,47 +368,42 @@ class db_manager:
         conn.commit()
         conn.close()
 
-    # INTERNAL RAW SQL HELPERS
-    def _execute_sql(self, sql: str):
+    # PARAMETERIZED EXECUTION
+    def _execute_sql(self, sql: str, params=None):
         conn = self._connect()
         cur = conn.cursor()
-        cur.execute(sql)
+        cur.execute(sql, params or [])
         conn.commit()
         conn.close()
 
-    def _fetchall_sql(self, sql: str):
+    def _fetchall_sql(self, sql: str, params=None):
         conn = self._connect()
         cur = conn.cursor()
-        cur.execute(sql)
+        cur.execute(sql, params or [])
         rows = cur.fetchall()
         conn.close()
         return rows
 
-    def _fetchone_sql(self, sql: str):
+    def _fetchone_sql(self, sql: str, params=None):
         conn = self._connect()
         cur = conn.cursor()
-        cur.execute(sql)
+        cur.execute(sql, params or [])
         row = cur.fetchone()
         conn.close()
         return row
 
-    # ENABLE FULL-DATABASE ENCRYPTION
+    # ENABLE ENCRYPTION
     def encrypt(self, key: str):
-        """
-        Enable full-database encryption using SQLCipher.
-        Must be called BEFORE writing any data.
-        """
         self._encryption_key = key
         print("Full database encryption enabled (SQLCipher).")
-        return self  # allow chaining
+        return self
 
-    # PUBLIC QUERY EXECUTION (QueryBuilder only)
-    def run(self, builder):
-        sql = builder.to_sql()
-        mode = builder._mode
+    # PUBLIC QUERY EXECUTION
+    def run(self, builder: _QueryBuilder):
+        sql, params = builder.to_sql()
 
-        if mode == "SELECT":
-            return self._fetchall_sql(sql)
+        if builder._mode == "SELECT":
+            return self._fetchall_sql(sql, params)
 
-        self._execute_sql(sql)
+        self._execute_sql(sql, params)
         return None

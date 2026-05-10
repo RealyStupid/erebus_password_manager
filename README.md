@@ -7,7 +7,7 @@ Digital privacy starts at locally hosting your own services, and if you have use
 
 ---
 ## todo's
-- [ ] Fix SQL injection prone to happen inside Database_API
+- [x] Fix SQL injection prone to happen inside Database_API
 - [ ] Create a Password API responsible for interacting with Database_API to allow easy creation, deletion, modification of data.
 - [ ] create a GUI to use with the Database_API and Password API
 - [ ] turn this into an executable
