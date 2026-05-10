@@ -1,5 +1,5 @@
 # A test to see the db_manager.py actually works
-from Database_API import db_manager, column, query
+from Backend.Database_API import column, query, db_manager
 
 if __name__ == "__main__":
     # Initialize DB (unencrypted at this moment)
