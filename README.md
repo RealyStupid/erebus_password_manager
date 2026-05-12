@@ -10,8 +10,8 @@ Digital privacy starts at locally hosting your own services, and if you have use
 - [x] Fix SQL injection prone to happen inside Database_API
 - [x] instance.py for database object instance
 - [x] initializer API
-- [ ] Create a Password API responsible for interacting with Database_API to allow easy creation, deletion, modification of data.
-- [ ] create a GUI to use with the Database_API and Password API
+- [x] Create a Password API responsible for interacting with Database_API to allow easy creation, deletion, modification of data.
+- [ ] create a GUI to use with the Database_API and Password API. this is gone take me the longest lol
 - [ ] turn this into an executable
 ---
 ## Database structure (will change in the future)

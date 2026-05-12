@@ -25,7 +25,8 @@ label = Label(window,
               relief=RAISED,
               bd=10,
               padx=20,
-              pady=20)
+              pady=20
+            )
 label.pack() # now this added the label at the center
 # label.place(x=0,y=0) # this places the text at a specific cords
 # both of these create a background on the text
