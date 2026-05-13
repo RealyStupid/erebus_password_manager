@@ -23,3 +23,6 @@ Digital privacy starts at locally hosting your own services, and if you have use
 ---
 ### contributions!
 i will make a document on contributing later... but 4 right now you can just make an issue for features/bugs.
+---
+### Documentation
+i'll also work on that later lol
