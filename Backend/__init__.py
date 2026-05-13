@@ -1,1 +1,1 @@
-from instance import DB_OBJ, db_name, table_name
+from .instance import DB_OBJ, db_name, table_name

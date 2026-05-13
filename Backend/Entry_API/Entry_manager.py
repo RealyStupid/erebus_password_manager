@@ -14,7 +14,7 @@ def new_entry(web: str | None, user: str | None, passwrd: str | None):
     DB_OBJ.run(query(table_name).insert(**data))
 
 def delete_entry(index: int):
-    DB_OBJ.run(query(table_name).delete().where("index = ?", index))
+    DB_OBJ.run(query(table_name).delete().where("ind = ?", index))
 
 def change_entry(index: int, web: str | None, user: str | None, passwrd: str | None):
     data = {}
@@ -26,4 +26,4 @@ def change_entry(index: int, web: str | None, user: str | None, passwrd: str | N
     if passwrd is not None:
         data["passwrds"] = passwrd
 
-    DB_OBJ.run(query(table_name).update(**data).where("index = ?", index))
+    DB_OBJ.run(query(table_name).update(**data).where("ind = ?", index))

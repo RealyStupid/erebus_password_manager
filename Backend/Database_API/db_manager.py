@@ -352,6 +352,64 @@ class db_manager:
 
         return conn
 
+    #  PRETTY PRINT ANY TABLE
+    def print_table(self, table_name: str):
+        """
+        Prints the entire contents of a table in a clean ASCII table format.
+        """
+
+        conn = self._connect()
+        cur = conn.cursor()
+
+        # Get column names
+        cur.execute(f"PRAGMA table_info({table_name});")
+        info = cur.fetchall()
+        if not info:
+            print(f"[ERROR] Table '{table_name}' does not exist.")
+            conn.close()
+            return
+
+        columns = [col[1] for col in info]
+
+        # Fetch all rows
+        cur.execute(f"SELECT * FROM {table_name};")
+        rows = cur.fetchall()
+        conn.close()
+
+        # Convert everything to strings
+        str_rows = [[str(item) for item in row] for row in rows]
+
+        # Compute column widths
+        col_widths = []
+        for i in range(len(columns)):
+            if str_rows:
+                # rows exist → include row lengths
+                width = max(len(columns[i]), *(len(r[i]) for r in str_rows))
+            else:
+                # no rows → width is just the column name
+                width = len(columns[i])
+            col_widths.append(width)
+
+        # Build horizontal separator
+        sep = "+" + "+".join("-" * (w + 2) for w in col_widths) + "+"
+
+        # Print table name
+        print("\n" + table_name)
+        print(sep)
+
+        # Print header
+        header = "|" + "|".join(f" {columns[i].ljust(col_widths[i])} " for i in range(len(columns))) + "|"
+        print(header)
+        print(sep)
+
+        # Print rows
+        for row in str_rows:
+            line = "|" + "|".join(f" {row[i].ljust(col_widths[i])} " for i in range(len(row))) + "|"
+            print(line)
+
+        print(sep)
+        print(f"{len(rows)} row(s).\n")
+
     # DATABASE CREATION
     def create_db(self):
         conn = self._connect()
