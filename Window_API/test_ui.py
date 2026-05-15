@@ -7,7 +7,7 @@ from tkinter import *
 
 window = Tk() # instantiate an instance of a window
 
-# window.geometry("420x420") # set initial size of window
+window.geometry("420x420") # set initial size of window
 
 window.title("epic first GUI") # set the name of the window
 
@@ -23,12 +23,12 @@ label = Label(window,
               font=("Arial", 40, 'bold'), 
               fg="green", bg="gray",
               relief=RAISED,
-              bd=10,
-              padx=20,
-              pady=20
+              bd=20,
+              padx=30,
+              pady=50
             )
 label.pack() # now this added the label at the center
-# label.place(x=0,y=0) # this places the text at a specific cords
+label.place(x=0,y=0) # this places the text at a specific cords
 # both of these create a background on the text
 
 window.mainloop() # Place window on screen, listens for events

@@ -14,3 +14,7 @@ DB_OBJ = db_manager(
         column("passwrds").text().default("EMPTY")
     )
 )
+
+def initialize():
+    # at startup, this will be called to call DB_OBJ.create_db()
+    DB_OBJ.create_db()

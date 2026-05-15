@@ -2,7 +2,6 @@
 # This will also be a refrence for me when creating the codebase
 
 from Backend import *
-from Backend.Initializer_API import initialize
 from Backend.Entry_API import *
 
 if __name__ == "__main__":
