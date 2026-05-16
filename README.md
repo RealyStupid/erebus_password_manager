@@ -11,8 +11,8 @@ Digital privacy starts at locally hosting your own services, and if you have use
 - [x] instance.py for database object instance
 - [x] initializer API
 - [x] Create a Password API responsible for interacting with Database_API to allow easy creation, deletion, modification of data.
-- [ ] create a GUI to use with the Database_API and Password API. this is gone take me the longest lol
-- [ ] turn this into an executable
+- [x] create a GUI to use with the Database_API and Password API. this is gone take me the longest lol
+- [x] turn this into an executable
 - [ ] Create an import and export implomentation
 ---
 ## Database structure (will change in the future)
