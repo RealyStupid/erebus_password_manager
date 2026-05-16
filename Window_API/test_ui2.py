@@ -112,7 +112,7 @@ def sign_in():
 def main_screen():
     win = Tk()
     win.title("Password Manager")
-    win.geometry("700x500")
+    win.geometry("1000x500")
     win.configure(bg=BG)
 
     # ============================
@@ -120,13 +120,29 @@ def main_screen():
     # ============================
     columns = DB_OBJ.columns
 
-    tree = ttk.Treeview(win, columns=columns, show="headings", height=15)
-    tree.place(x=20, y=20)
+    tree = ttk.Treeview(
+        win,
+        columns=columns,
+        show="headings"
+    )
 
-    # Scrollbar
+    # Treeview expands with window
+    tree.place(
+        relx=0.02,      # 2% from left
+        rely=0.04,      # 4% from top
+        relwidth=0.93,  # 93% of window width
+        relheight=0.70  # 70% of window height
+    )
+
+    # Scrollbar (sticks to right side)
     scrollbar = Scrollbar(win, orient=VERTICAL, command=tree.yview)
+    scrollbar.place(
+        relx=0.95,      # 95% from left (right side)
+        rely=0.04,
+        relheight=0.70
+    )
+
     tree.configure(yscrollcommand=scrollbar.set)
-    scrollbar.place(x=660, y=20, height=330)
 
     # Column headings
     for col in columns:
@@ -221,9 +237,25 @@ def main_screen():
     # ============================
     # BUTTONS
     # ============================
-    Button(win, text="Add Entry", bg=BTN_BG, fg=BTN_FG, command=open_add_window).place(x=20, y=370)
-    Button(win, text="Edit Entry", bg=BTN_BG, fg=BTN_FG, command=open_edit_window).place(x=120, y=370)
-    Button(win, text="Delete Entry", bg=BTN_BG, fg=BTN_FG, command=delete_selected).place(x=220, y=370)
-    Button(win, text="Refresh", bg=BTN_BG, fg=BTN_FG, command=refresh_table).place(x=330, y=370)
+
+    button_width = 0.20   # 20% of window width
+    button_height = 0.08  # 8% of window height
+    y_pos = 0.78          # 78% down the window
+
+    Button(
+        win, text="Add Entry", bg=BTN_BG, fg=BTN_FG, command=open_add_window
+    ).place(relx=0.02, rely=y_pos, relwidth=button_width, relheight=button_height)
+
+    Button(
+        win, text="Edit Entry", bg=BTN_BG, fg=BTN_FG, command=open_edit_window
+    ).place(relx=0.27, rely=y_pos, relwidth=button_width, relheight=button_height)
+
+    Button(
+        win, text="Delete Entry", bg=BTN_BG, fg=BTN_FG, command=delete_selected
+    ).place(relx=0.52, rely=y_pos, relwidth=button_width, relheight=button_height)
+
+    Button(
+        win, text="Refresh", bg=BTN_BG, fg=BTN_FG, command=refresh_table
+    ).place(relx=0.77, rely=y_pos, relwidth=button_width, relheight=button_height)
 
     win.mainloop()
