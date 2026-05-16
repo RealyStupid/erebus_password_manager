@@ -1,5 +1,5 @@
 # this is a test client to make sure the backend api actually works
-# This will also be a refrence for me when creating the codebase
+# This will also be a reference for me when creating the codebase
 
 from Backend import *
 from Backend.Entry_API import *
@@ -13,18 +13,26 @@ if __name__ == "__main__":
     DB_OBJ.print_table(table_name)
 
     # create a few entries and then print the table result
-    new_entry(web=None, user="user1", passwrd="123456789")
-    new_entry(web=None, user="user2", passwrd="aaaaaaaaa")
-    new_entry(web=None, user="user3", passwrd="qwertyuiopwrdydrydrrd")
+    new_entry(users="user1", passwrds="123456789")
+    new_entry(websites="roblox.com", users="user2", passwrds="aaaaaaaaa")
+    new_entry(users="user3", passwrds="qwertyuiopwrdydrydrrd")
+    new_entry(users="user1", passwrds="123456789")
+    new_entry(websites="roblox.com", users="user2", passwrds="aaaaaaaaa")
+    new_entry(users="user3", passwrds="qwertyuiopwrdydrydrrd")
+    new_entry(users="user1", passwrds="123456789")
+    new_entry(websites="roblox.com", users="user2", passwrds="aaaaaaaaa")
+    new_entry(users="user3", passwrds="qwertyuiopwrdydrydrrd")
 
     DB_OBJ.print_table(table_name)
 
-    # change a entry
-    change_entry(index=1, web="youtube.com", user=None, passwrd=None)
+    # change an entry (index 1)
+    change_entry(1, websites="youtube.com")
 
     DB_OBJ.print_table(table_name)
 
-    # delete a entry
-    delete_entry(index=3)
+    # delete entry with index 3
+    delete_entry(3)
 
     DB_OBJ.print_table(table_name)
+
+    print(get_all_entries())

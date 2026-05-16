@@ -306,7 +306,7 @@ def query(table: str) -> _QueryBuilder:
 
 
 # ============================================================
-#  DATABASE MANAGER (UPDATED FOR PARAMETERIZED EXECUTION)
+#  DATABASE MANAGER
 # ============================================================
 
 class db_manager:
@@ -315,7 +315,13 @@ class db_manager:
         self.directory = directory
         self.db_name = db_name
 
-        self.schema = ", ".join(col.to_sql() for col in schema)
+        # Store schema objects
+        self.schema_objects = list(schema)
+
+        # Extract column names dynamically
+        self.columns = [col.name for col in self.schema_objects]
+
+        self.schema = ", ".join(col.to_sql() for col in self.schema_objects)
 
         self._encryption_key = None
 
@@ -352,16 +358,11 @@ class db_manager:
 
         return conn
 
-    #  PRETTY PRINT ANY TABLE
+    # PRETTY PRINT ANY TABLE
     def print_table(self, table_name: str):
-        """
-        Prints the entire contents of a table in a clean ASCII table format.
-        """
-
         conn = self._connect()
         cur = conn.cursor()
 
-        # Get column names
         cur.execute(f"PRAGMA table_info({table_name});")
         info = cur.fetchall()
         if not info:
@@ -371,38 +372,29 @@ class db_manager:
 
         columns = [col[1] for col in info]
 
-        # Fetch all rows
         cur.execute(f"SELECT * FROM {table_name};")
         rows = cur.fetchall()
         conn.close()
 
-        # Convert everything to strings
         str_rows = [[str(item) for item in row] for row in rows]
 
-        # Compute column widths
         col_widths = []
         for i in range(len(columns)):
             if str_rows:
-                # rows exist → include row lengths
                 width = max(len(columns[i]), *(len(r[i]) for r in str_rows))
             else:
-                # no rows → width is just the column name
                 width = len(columns[i])
             col_widths.append(width)
 
-        # Build horizontal separator
         sep = "+" + "+".join("-" * (w + 2) for w in col_widths) + "+"
 
-        # Print table name
         print("\n" + table_name)
         print(sep)
 
-        # Print header
         header = "|" + "|".join(f" {columns[i].ljust(col_widths[i])} " for i in range(len(columns))) + "|"
         print(header)
         print(sep)
 
-        # Print rows
         for row in str_rows:
             line = "|" + "|".join(f" {row[i].ljust(col_widths[i])} " for i in range(len(row))) + "|"
             print(line)
