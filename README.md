@@ -1,4 +1,4 @@
-<h1 align="center">Erebus Password Manager</h1>
+<h1 align="center">Erebus Password Manager... SUPPORT STOPED</h1>
 
 <p align="center"><strong>Erebus (or Erebos) is the Greek primordial deity of darkness and shadow, representing deep gloom and mist. Born from Chaos, he is one of the original Protogenoi, representing a fundamental force rather than a human-like god.</strong></p>
 
